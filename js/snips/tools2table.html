@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools Table</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <button id="downloadExcel">Download Excel</button>
+    <table id="toolsTable">
+        <thead>
+            <tr id="tableHeader"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script>
+        const toolsListUrl = 'https://raw.githubusercontent.com/euraf/AF_FAIRness/main/catalogue/tools/tools_list.json';
+
+        async function fetchJson(url) {
+            const response = await fetch(url);
+            return await response.json();
+        }
+
+        async function getToolUrls() {
+            const tools = await fetchJson(toolsListUrl);
+            return tools.map(tool => `https://raw.githubusercontent.com/euraf/AF_FAIRness/main/catalogue/tools/${tool}.json`);
+        }
+
+        function createTableHeader(fields) {
+            const tableHeader = document.getElementById('tableHeader');
+            fields.forEach(field => {
+                const th = document.createElement('th');
+                th.innerText = field;
+                tableHeader.appendChild(th);
+            });
+        }
+
+        function createTableRow(data) {
+            const tableBody = document.getElementById('tableBody');
+            const tr = document.createElement('tr');
+            for (const key in data) {
+                const td = document.createElement('td');
+                td.innerText = data[key];
+                tr.appendChild(td);
+            }
+            tableBody.appendChild(tr);
+        }
+
+        async function buildTable() {
+            const jsonFiles = await getToolUrls();
+            const data = await Promise.all(jsonFiles.map(file => fetchJson(file)));
+            if (data.length > 0) {
+                const fields = Object.keys(data[0]);
+                createTableHeader(fields);
+                data.forEach(item => createTableRow(item));
+                return data;
+            }
+        }
+
+        function downloadExcel(data) {
+            const worksheet = XLSX.utils.json_to_sheet(data);
+
+            // Apply some styling
+            const headerStyle = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFFF00" } },
+                alignment: { horizontal: "center" }
+            };
+            const cellStyle = {
+                border: {
+                    top: { style: "thin" },
+                    bottom: { style: "thin" },
+                    left: { style: "thin" },
+                    right: { style: "thin" }
+                }
+            };
+
+            // Get the range of the worksheet
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const address = XLSX.utils.encode_col(C) + "1"; // First row (header)
+                if (!worksheet[address]) continue;
+                worksheet[address].s = headerStyle;
+            }
+
+            for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const address = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!worksheet[address]) continue;
+                    worksheet[address].s = cellStyle;
+                }
+            }
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Tools Data");
+
+            // Set column widths
+            const cols = [];
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                cols.push({ wch: 20 });
+            }
+            worksheet['!cols'] = cols;
+
+            XLSX.writeFile(workbook, "tools_data.xlsx");
+        }
+
+        document.getElementById('downloadExcel').addEventListener('click', async () => {
+            const data = await buildTable();
+            downloadExcel(data);
+        });
+
+        buildTable();
+    </script>
+</body>
+</html>
