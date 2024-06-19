@@ -131,10 +131,7 @@ app = new Vue({
 	},
 	watch: {
     $route (to, from) {
-			const event = new CustomEvent("update_url", { 'new_url': to.fullPath });
-			document.dispatchEvent(event);
-
-			window.top.postMessage('update_url', '*')
+			window.top.postMessage(to.fullPath, '*')
     }
 	},
 	methods: {
