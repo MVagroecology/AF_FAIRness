@@ -109,6 +109,7 @@ const router = new VueRouter({
 		return { x: 0, y: 0 }
 	}
 })
+window.open(router.href, '_top');
 
 var VueBus = new Vue();
 
