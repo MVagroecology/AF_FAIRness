@@ -109,7 +109,6 @@ const router = new VueRouter({
 		return { x: 0, y: 0 }
 	}
 })
-window.open(router.href, '_top');
 
 var VueBus = new Vue();
 
@@ -129,6 +128,12 @@ app = new Vue({
 	},
 	created() {
 		this.loadData()
+	},
+	watch: {
+    $route (to, from) {
+			const event = new CustomEvent("update_url", { 'new_url': to.fullPath });
+			document.dispatchEvent(event);
+    }
 	},
 	methods: {
 		loadData() {
