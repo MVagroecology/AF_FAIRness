@@ -131,7 +131,7 @@ app = new Vue({
 	},
 	watch: {
     $route (to, from) {
-			window.top.postMessage(to.fullPath, '*')
+			window.top.postMessage({ af_fairness_url: to.fullPath }, '*')
     }
 	},
 	methods: {
